@@ -39,6 +39,7 @@ class ValidationError:
     field: Optional[str] = None
     error: str = ""
     suggestion: Optional[str] = None
+    hint: Optional[str] = None  # Plain English explanation for non-technical users
     fixable: bool = False
     loop: Optional[str] = None
     line_number: Optional[int] = None
@@ -54,6 +55,7 @@ class ValidationError:
             "field": self.field,
             "error": self.error,
             "suggestion": self.suggestion,
+            "hint": self.hint,
             "fixable": self.fixable,
             "loop": self.loop,
             "line_number": self.line_number,

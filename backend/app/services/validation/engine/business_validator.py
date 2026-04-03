@@ -89,6 +89,7 @@ class BusinessValidator:
                             field="NM109",
                             error=error_msg,
                             suggestion=NPIValidator.get_suggestion(id_value),
+                            hint="The National Provider Identifier (NPI) is a unique 10-digit number for healthcare providers. This one failed the security check (checksum validation).",
                             fixable=False,
                             value=id_value,
                             code="NPI001"
@@ -142,6 +143,7 @@ class BusinessValidator:
                             field="DTP03",
                             error=error_msg,
                             suggestion=DateValidator.get_suggestion(date_value, format_type),
+                            hint="The date provided is either in the wrong format or represents an impossible date (like February 30th or a date in the future when it shouldn't be).",
                             fixable=True,
                             value=date_value,
                             code="DATE001"
@@ -178,6 +180,7 @@ class BusinessValidator:
                             field="DMG02",
                             error=error_msg,
                             suggestion="Verify date of birth is in CCYYMMDD format and reasonable",
+                            hint="The date of birth is either formatted incorrectly, represents an impossible date, or indicates an unrealistic age (over 120 years old or in the future).",
                             fixable=False,
                             value=dob,
                             code="DATE002"
@@ -241,6 +244,7 @@ class BusinessValidator:
                             field="N403",
                             error=error_msg,
                             suggestion="ZIP code must be 5 digits (XXXXX) or 9 digits with hyphen (XXXXX-XXXX)",
+                            hint="ZIP codes must be either 5 digits (like 10001) or 9 digits with a hyphen (like 10001-1234). The one provided doesn't match either format.",
                             fixable=True,
                             value=zip_code,
                             code="ZIP001"
@@ -283,6 +287,7 @@ class BusinessValidator:
                                 field="NM108",
                                 error=f"Invalid qualifier '{qualifier}' for 10-digit ID",
                                 suggestion="Use XX for 10-digit NPI (National Provider Identifier)",
+                                hint="When you have a 10-digit identification number, it's always an NPI (National Provider Identifier), so you must use the code 'XX' to indicate this.",
                                 fixable=False,
                                 value=qualifier,
                                 code="QUAL001"
@@ -301,6 +306,7 @@ class BusinessValidator:
                                 field="NM109",
                                 error=f"Invalid NPI format: {id_value} (length: {id_length})",
                                 suggestion="NPI must be exactly 10 numeric digits when using qualifier XX",
+                                hint="You indicated this is an NPI (using code XX), but NPIs must be exactly 10 digits. This one is either too short, too long, or contains non-numeric characters.",
                                 fixable=False,
                                 value=id_value,
                                 code="QUAL003"
@@ -319,6 +325,7 @@ class BusinessValidator:
                                 field="NM109",
                                 error=f"SSN format issue: {id_value} (length: {id_length})",
                                 suggestion="SSN should be 9 numeric digits when using qualifier 34",
+                                hint="You indicated this is a Social Security Number (using code 34), but SSNs are typically 9 digits. Note: Using SSN in healthcare transactions may have privacy restrictions.",
                                 fixable=False,
                                 value=id_value,
                                 code="QUAL004"
@@ -415,6 +422,7 @@ class BusinessValidator:
                             field="CLM02",
                             error=f"Claim total (${claim_total_parsed}) does not match sum of service lines (${service_line_total})",
                             suggestion="Ensure CLM02 equals sum of all SV102 amounts",
+                            hint="The total claim amount should equal the sum of all individual service line charges. There's a mismatch in the math - either the total is wrong or one of the service line amounts is incorrect.",
                             fixable=True,
                             code="837001"
                         )
@@ -446,6 +454,7 @@ class BusinessValidator:
                         field="CAS01",
                         error=f"Invalid CAS group code: {group_code}",
                         suggestion=f"Use valid group code: {', '.join(valid_group_codes)}",
+                        hint="CAS group codes indicate who is responsible for the adjustment: CO=Contractual (insurance), PR=Patient Responsibility, OA=Other, PI=Payer Initiated, CR=Corrections.",
                         fixable=False,
                         value=group_code,
                         code="835001"
@@ -504,6 +513,7 @@ class BusinessValidator:
                                 field="NM109",
                                 error=f"Duplicate member ID detected: {member_id}",
                                 suggestion="Each member must have a unique identifier",
+                                hint="This member ID appears more than once in the transaction. Each person should have a unique identifier to avoid confusion and processing errors.",
                                 fixable=False,
                                 value=member_id,
                                 code="834003"
@@ -524,6 +534,7 @@ class BusinessValidator:
                                 segment="NM1",
                                 error=f"Possible duplicate member: {first_name} {last_name} (DOB: {dob})",
                                 suggestion="Verify this is not a duplicate enrollment",
+                                hint="Found another member with the same name and date of birth. This might be a duplicate entry, or it could be two different people who happen to share the same name and birthday.",
                                 fixable=False,
                                 code="834004"
                             )
@@ -570,6 +581,7 @@ class BusinessValidator:
                         field="INS01",
                         error=f"Invalid member indicator: {ins01}",
                         suggestion=f"Use valid value: {', '.join(sorted(valid_ins01))}",
+                        hint="This field indicates whether the person is the main subscriber (Y for Yes) or a dependent (N for No). Only Y or N are allowed.",
                         fixable=False,
                         value=ins01,
                         code="834001"
@@ -587,6 +599,7 @@ class BusinessValidator:
                         field="INS02",
                         error=f"Invalid relationship code: {ins02}",
                         suggestion=f"Use valid relationship code (e.g., 18=Self, 01=Spouse)",
+                        hint="This code describes the relationship between the member and the subscriber (like Self, Spouse, Child, etc.). The code provided is not recognized.",
                         fixable=False,
                         value=ins02,
                         code="834002"
@@ -604,6 +617,7 @@ class BusinessValidator:
                         field="INS03",
                         error=f"Invalid maintenance type code: {ins03}",
                         suggestion=f"Use valid code (e.g., 021=Addition, 001=Change, 024=Termination)",
+                        hint="This code tells what kind of change is being made to the member's enrollment (like adding a new member, updating existing info, or terminating coverage).",
                         fixable=False,
                         value=ins03,
                         code="834005"
@@ -621,6 +635,7 @@ class BusinessValidator:
                         field="INS04",
                         error=f"Invalid maintenance reason code: {ins04}",
                         suggestion=f"Use valid reason code (e.g., XN=Non-Payment, 28=Initial Enrollment)",
+                        hint="This code explains why the enrollment change is happening (like initial enrollment, marriage, birth, termination due to non-payment, etc.).",
                         fixable=False,
                         value=ins04,
                         code="834006"

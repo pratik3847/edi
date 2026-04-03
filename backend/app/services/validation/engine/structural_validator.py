@@ -58,7 +58,8 @@ class StructuralValidator:
                     severity=ErrorSeverity.CRITICAL,
                     segment="ISA",
                     error="No segments found in EDI file",
-                    suggestion="Ensure file contains valid EDI segments"
+                    suggestion="Ensure file contains valid EDI segments",
+                    hint="The file appears to be empty or not properly formatted as an EDI file. EDI files contain structured data segments separated by delimiters."
                 )
             )
             return
@@ -72,7 +73,8 @@ class StructuralValidator:
                     severity=ErrorSeverity.CRITICAL,
                     segment="ISA",
                     error="ISA segment must be first segment in file",
-                    suggestion="Add ISA interchange control header"
+                    suggestion="Add ISA interchange control header",
+                    hint="Every EDI file must start with an ISA segment, which acts like an envelope header containing sender and receiver information."
                 )
             )
         
@@ -85,7 +87,8 @@ class StructuralValidator:
                     severity=ErrorSeverity.ERROR,
                     segment="IEA",
                     error="IEA segment must be last segment in file",
-                    suggestion="Add IEA interchange control trailer"
+                    suggestion="Add IEA interchange control trailer",
+                    hint="Every EDI file must end with an IEA segment, which closes the envelope and confirms how many transactions were included."
                 )
             )
         
@@ -101,7 +104,8 @@ class StructuralValidator:
                     severity=ErrorSeverity.ERROR,
                     segment="GE",
                     error="GS segment found but missing GE trailer",
-                    suggestion="Add GE functional group trailer"
+                    suggestion="Add GE functional group trailer",
+                    hint="The GS segment starts a functional group (a collection of related transactions), and every GS must have a matching GE segment to close it."
                 )
             )
         
@@ -117,7 +121,8 @@ class StructuralValidator:
                     severity=ErrorSeverity.ERROR,
                     segment="SE",
                     error="ST segment found but missing SE trailer",
-                    suggestion="Add SE transaction set trailer"
+                    suggestion="Add SE transaction set trailer",
+                    hint="The ST segment starts a transaction (like an enrollment or claim), and every ST must have a matching SE segment to close it and count the segments."
                 )
             )
     
@@ -130,6 +135,19 @@ class StructuralValidator:
         
         for required_seg in required:
             if required_seg not in segment_ids:
+                # Create segment-specific hints
+                segment_hints = {
+                    "ISA": "ISA is the Interchange Control Header - it's like the outer envelope of your EDI file containing sender/receiver info.",
+                    "GS": "GS is the Functional Group Header - it groups related transactions together (like multiple enrollments).",
+                    "ST": "ST is the Transaction Set Header - it marks the start of a specific transaction (like one enrollment or claim).",
+                    "BGN": "BGN is the Beginning Segment - it provides basic information about when and why this transaction was created.",
+                    "BHT": "BHT is the Beginning of Hierarchical Transaction - it identifies the purpose and type of the healthcare transaction.",
+                    "BPR": "BPR is the Financial Information segment - it contains payment amount and method details for remittance advice.",
+                    "SE": "SE is the Transaction Set Trailer - it closes the transaction and counts how many segments were included.",
+                    "GE": "GE is the Functional Group Trailer - it closes the functional group and counts how many transactions were included.",
+                    "IEA": "IEA is the Interchange Control Trailer - it closes the entire EDI file and confirms the interchange control number."
+                }
+                
                 self.errors.append(
                     ValidationError(
                         layer=ErrorLayer.STRUCTURAL,
@@ -137,7 +155,8 @@ class StructuralValidator:
                         severity=ErrorSeverity.ERROR,
                         segment=required_seg,
                         error=f"Required segment {required_seg} is missing",
-                        suggestion=f"Add {required_seg} segment to transaction"
+                        suggestion=f"Add {required_seg} segment to transaction",
+                        hint=segment_hints.get(required_seg, f"The {required_seg} segment is required for this transaction type.")
                     )
                 )
     
@@ -172,7 +191,8 @@ class StructuralValidator:
                         segment="ISA",
                         line_number=idx + 1,
                         error=f"ISA segment must have 16 elements (found {element_count})",
-                        suggestion="Verify ISA segment structure"
+                        suggestion="Verify ISA segment structure",
+                        hint="The ISA segment requires exactly 16 data elements including authorization info, sender/receiver IDs, date, time, standards version, and control numbers. Some elements may be missing or incorrectly formatted."
                     )
                 )
             
@@ -185,7 +205,8 @@ class StructuralValidator:
                         segment="GS",
                         line_number=idx + 1,
                         error=f"GS segment must have 8 elements (found {element_count})",
-                        suggestion="Verify GS segment structure"
+                        suggestion="Verify GS segment structure",
+                        hint="The GS segment requires exactly 8 data elements including functional code, sender/receiver codes, date, time, control number, and version. Some elements may be missing."
                     )
                 )
     
@@ -204,7 +225,8 @@ class StructuralValidator:
                     segment="IEA",
                     field="IEA02",
                     error=f"IEA control number ({iea_control}) does not match ISA ({isa_control})",
-                    suggestion="Ensure ISA13 and IEA02 have matching control numbers"
+                    suggestion="Ensure ISA13 and IEA02 have matching control numbers",
+                    hint="Control numbers are like tracking IDs - the number at the start (ISA) must match the number at the end (IEA) to confirm the file is complete and unchanged."
                 )
             )
         
@@ -221,7 +243,8 @@ class StructuralValidator:
                     segment="GE",
                     field="GE02",
                     error=f"GE control number ({ge_control}) does not match GS ({gs_control})",
-                    suggestion="Ensure GS06 and GE02 have matching control numbers"
+                    suggestion="Ensure GS06 and GE02 have matching control numbers",
+                    hint="The functional group control number at the start (GS) must match the one at the end (GE) to confirm all transactions in the group are accounted for."
                 )
             )
         
@@ -238,7 +261,8 @@ class StructuralValidator:
                     segment="SE",
                     field="SE02",
                     error=f"SE control number ({se_control}) does not match ST ({st_control})",
-                    suggestion="Ensure ST02 and SE02 have matching control numbers"
+                    suggestion="Ensure ST02 and SE02 have matching control numbers",
+                    hint="The transaction control number at the start (ST) must match the one at the end (SE) to confirm this specific transaction is complete."
                 )
             )
     
@@ -270,6 +294,7 @@ class StructuralValidator:
                         field="SE01",
                         error=f"SE segment count ({se_count}) does not match actual count ({actual_count})",
                         suggestion=f"Update SE01 to {actual_count}",
+                        hint=f"The SE segment should report how many segments are in this transaction (including ST and SE). It says {se_count} but there are actually {actual_count} segments.",
                         fixable=True
                     )
                 )
@@ -297,6 +322,7 @@ class StructuralValidator:
                         field="ISA12",
                         error=f"Invalid ISA version: {isa_version}",
                         suggestion="Use valid version (00401 or 00501)",
+                        hint="The ISA version indicates which EDI standard is being used. Common versions are 00401 (version 4010) and 00501 (version 5010). The version provided is not recognized.",
                         fixable=False,
                         value=isa_version
                     )
@@ -314,6 +340,7 @@ class StructuralValidator:
                         field="GS08",
                         error=f"GS version ({gs_version}) does not match ISA version ({isa_version})",
                         suggestion="Ensure ISA12 and GS08 versions are consistent (e.g., ISA=00501, GS=005010X220A1)",
+                        hint="The version numbers in ISA and GS must be compatible. If ISA uses version 00501, then GS should use a 005010X format (like 005010X220A1 for 834 transactions).",
                         fixable=False
                     )
                 )
@@ -327,6 +354,7 @@ class StructuralValidator:
                         field="GS08",
                         error=f"GS version ({gs_version}) does not match ISA version ({isa_version})",
                         suggestion="Ensure ISA12 and GS08 versions are consistent (e.g., ISA=00401, GS=004010X098A1)",
+                        hint="The version numbers in ISA and GS must be compatible. If ISA uses version 00401, then GS should use a 004010X format.",
                         fixable=False
                     )
                 )
