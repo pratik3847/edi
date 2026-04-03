@@ -4,6 +4,8 @@ import Navbar from './components/Navbar'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
+import Dashboard from './pages/Dashboard'
+import SessionPage from './pages/Session'
 // @ts-ignore
 import Lenis from 'lenis'
 import gsap from 'gsap'
@@ -66,6 +68,8 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/session/:id" element={<SessionPage />} />
         </Routes>
       </main>
     </>
